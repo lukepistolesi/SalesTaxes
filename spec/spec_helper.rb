@@ -94,11 +94,13 @@ RSpec.configure do |config|
     mocks.verify_partial_doubles = true
   end
 
-  config.before :all, :integration do
-    empty_keywords = { keywords: { food: '', books: '', medical: '' }}
-    test_yaml_file = File.expand_path('./product_keywords.yml', File.dirname(__FILE__))
-    (file = File.new(test_yaml_file, 'w')).write YAML.dump(empty_keywords)
-    file.close
-    SalesTaxesApp::Configuration.instance.send :product_keywords_yml_file=, test_yaml_file
+  config.before :each, :integration do
+    keywords = { food: '', books: '', medical: '' }
+    IntegrationHelper.set_classification_keywords keywords
+  end
+
+  config.after :each, :integration do
+    keywords = { food: '', books: '', medical: '' }
+    IntegrationHelper.set_classification_keywords keywords
   end
 end

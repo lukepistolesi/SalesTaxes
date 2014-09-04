@@ -4,9 +4,10 @@ module SalesTaxesApp
     @@gst_exempted_keywords = nil
 
     def self.compute_taxes!(receipt)
+      exemptions = self.gst_exempted_keywords
       full_taxes_amount =
         receipt.items.inject(0.0) do |sum, item|
-          percentage = self.find_tax_percentage item
+          percentage = self.find_tax_percentage item, exemptions
           full_taxes = item.price.to_f * (1.0 - 100.0/(100.0 + percentage))
           item.taxes_amount = (full_taxes * 20).round / 20.0
           sum += item.taxes_amount
@@ -23,21 +24,19 @@ module SalesTaxesApp
 
     private
 
-    def self.find_tax_percentage(item)
+    def self.find_tax_percentage(item, exemptions)
       product_name_words = Set.new item.product.split(' ').map(&:downcase)
-      return 10.0 if (product_name_words & self.gst_exempted_keywords).empty?
+      return 10.0 if (product_name_words & exemptions).empty?
       0.0
     end
 
     def self.gst_exempted_keywords
-      return @@gst_exempted_keywords if @@gst_exempted_keywords
       keywords = Configuration.instance.settings[:keywords]
-      @@gst_exempted_keywords =
-        Set.new(
-          keywords[:food].split(',') +
-          keywords[:books].split(',') +
-          keywords[:medical].split(',')
-        )
+      Set.new(
+        (keywords[:food].split(',') +
+        keywords[:books].split(',') +
+        keywords[:medical].split(',')).map(&:strip)
+      )
     end
   end
 end

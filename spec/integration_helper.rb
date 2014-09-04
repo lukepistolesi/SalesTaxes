@@ -38,4 +38,12 @@ class IntegrationHelper
     output_string.concat "Sales Taxes: #{summary[:taxes]}\nTotal: #{summary[:total]}"
     output_string.split "\n"
   end
+
+  def self.set_classification_keywords(keywords)
+    custom_keywords = { keywords: keywords }
+    test_yaml_file = File.expand_path('./product_keywords.yml', File.dirname(__FILE__))
+    (file = File.new(test_yaml_file, 'w')).write YAML.dump(custom_keywords)
+    file.close
+    SalesTaxesApp::Configuration.instance.send :product_keywords_yml_file=, test_yaml_file
+  end
 end

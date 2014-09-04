@@ -7,19 +7,26 @@ module SalesTaxesApp
 
     describe :compute_taxes! do
 
+      let(:exemptions) { Set.new }
       let(:item) { double(Models::ReceiptItem, price: 1.0, taxes_amount: 2.0).as_null_object }
       let(:items) { [item] }
       let(:receipt) { double Models::Receipt, items: items }
 
       before :each do
+        allow(TaxesCalculator).to receive(:gst_exempted_keywords).and_return exemptions
         allow(TaxesCalculator).to receive(:find_tax_percentage).and_return 0
         allow(receipt).to receive :taxes_amount=
       end
 
       subject { TaxesCalculator.compute_taxes! receipt }
 
+      it 'retrieves the exemptions' do
+        expect(TaxesCalculator).to receive(:gst_exempted_keywords).and_return Set.new
+        subject
+      end
+
       it 'computes the tax percentage for a receipt item' do
-        expect(TaxesCalculator).to receive(:find_tax_percentage).with(item).and_return 0
+        expect(TaxesCalculator).to receive(:find_tax_percentage).with(item, exemptions).and_return 0
 
         subject
       end
@@ -77,16 +84,7 @@ module SalesTaxesApp
       let(:item) { double Models::ReceiptItem, product: product_name_words.join(' ') }
       let(:gst_exempted_keywords) { Set.new }
 
-      before :each do
-        allow(TaxesCalculator).to receive(:gst_exempted_keywords).and_return gst_exempted_keywords
-      end
-
-      subject { TaxesCalculator.find_tax_percentage item }
-
-      it 'retrieves the keywords for the GST exempted' do
-        expect(TaxesCalculator).to receive(:gst_exempted_keywords).and_return gst_exempted_keywords
-        subject
-      end
+      subject { TaxesCalculator.find_tax_percentage item, gst_exempted_keywords }
 
       context 'GST exempted product' do
 
@@ -129,7 +127,6 @@ module SalesTaxesApp
 
       before :each do
         allow(Configuration).to receive(:instance).and_return mock_config
-        TaxesCalculator.class_variable_set :@@gst_exempted_keywords, nil
       end
 
       subject { TaxesCalculator.gst_exempted_keywords }
@@ -147,10 +144,13 @@ module SalesTaxesApp
         expect(subject).to eql Set.new([food, books, medical])
       end
 
-      it 'does not fetch the configuration settings when already loaded' do
-        TaxesCalculator.class_variable_set :@@gst_exempted_keywords, Set.new
-        expect(mock_config).not_to receive :settings
-        subject
+      it 'returns the union of all the stripped gst exempted keywords' do
+        food = settings[:keywords][:food] = 'One, Food'
+        books = settings[:keywords][:books] = 'pride , prejudice'
+        medical = settings[:keywords][:medical] = 'Aspirin'
+
+        expected_keywords = food.split(',') + books.split(',') + medical.split(',')
+        expect(subject).to eql Set.new(expected_keywords.map &:strip)
       end
     end
 
