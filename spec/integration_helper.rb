@@ -7,7 +7,8 @@ class IntegrationHelper
   def self.import_tax(price) self.calc_taxes price, 5.0 end
 
   def self.calc_taxes(price, tax_percentage)
-    (price.to_f * (1.0 - 100.0/(tax_percentage.to_f + 100.0))).round 2
+    full = price.to_f * (1.0 - 100.0/(tax_percentage.to_f + 100.0))
+    (full * 20).round / 20.0
   end
 
   def self.create_receipt_file(items)
@@ -23,7 +24,7 @@ class IntegrationHelper
     new_stdout = StringIO.new
     $stdout = new_stdout
     begin
-      SalesTaxesApp::Application.run ARGV
+      SalesTaxesApp::Application.run [input_hash[:input_file]]
     ensure
       $stdout = old_stdout
     end

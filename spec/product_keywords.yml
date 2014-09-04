@@ -1,4 +1,5 @@
-food:
-books:
-medical:
-imported:
+---
+:keywords:
+  :food: ''
+  :books: ''
+  :medical: ''
