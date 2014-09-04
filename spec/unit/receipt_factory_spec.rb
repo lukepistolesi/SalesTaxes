@@ -34,7 +34,7 @@ module SalesTaxesApp
         qt, prod_name, price = [ '12', 'Prod Name', '12.3']
         csv_row = {'Quantity' => qt, 'Product' => prod_name, 'Price' => price}
         allow(CSV).to receive(:foreach).and_yield csv_row
-        expect(Models::ReceiptItem).to receive(:new).with qt, prod_name, price
+        expect(Models::ReceiptItem).to receive(:new).with qt, prod_name, price.to_f
 
         subject
       end

@@ -9,8 +9,7 @@ module SalesTaxesApp
       full_taxes_amount =
         receipt.items.inject(0.0) do |sum, item|
           percentage = self.find_tax_percentage item, exemptions, imports
-          full_taxes = item.price.to_f * (1.0 - 100.0/(100.0 + percentage))
-          item.taxes_amount = (full_taxes * 20).round / 20.0
+          item.taxes_amount = compute_tax_amount item.price, percentage
           sum += item.taxes_amount
         end
       receipt.taxes_amount = (full_taxes_amount * 20).round / 20.0
@@ -19,11 +18,18 @@ module SalesTaxesApp
     def self.compute_total_price!(receipt)
       receipt.total_price =
         receipt.items.inject(0.0) do |sum, item|
-          sum += item.price.to_f
+          sum += item.price + item.taxes_amount
         end.round 2
     end
 
     private
+
+    def self.compute_tax_amount(cost, percentage)
+      full_taxes = cost * percentage
+      mod = full_taxes % 5
+      full_taxes += (5 - mod) if mod != 0
+      (full_taxes/100.0).round 2
+    end
 
     def self.find_tax_percentage(item, exemptions, imports)
       product_name_words = Set.new item.product.split(' ').map(&:downcase)

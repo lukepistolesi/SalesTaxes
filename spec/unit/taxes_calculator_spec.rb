@@ -17,6 +17,7 @@ module SalesTaxesApp
         allow(TaxesCalculator).to receive(:gst_exempted_keywords).and_return exemptions
         allow(TaxesCalculator).to receive(:import_taxation_keywords).and_return import_kws
         allow(TaxesCalculator).to receive(:find_tax_percentage).and_return 0
+        allow(TaxesCalculator).to receive(:compute_tax_amount).and_return 0
         allow(receipt).to receive :taxes_amount=
       end
 
@@ -38,14 +39,20 @@ module SalesTaxesApp
         subject
       end
 
-      it 'assign the rounded computed tax value to the item' do
-        price, percentage = [ 100.0, 3.0 ]
-        expected_tax_amount = price.to_f * (1.0 - 100.0/(100.0 + percentage))
-        expected_tax_amount = (expected_tax_amount * 20).round / 20.0
-
+      it 'computes the tax amount for the item' do
+        price, percentage = [ 10.0, 3.3 ]
+        expected_tax_amount = 0.35
         allow(TaxesCalculator).to receive(:find_tax_percentage).and_return percentage
         allow(item).to receive(:price).and_return price
-        expect(item).to receive(:taxes_amount=).with expected_tax_amount
+        expect(TaxesCalculator).to receive(:compute_tax_amount).with price, percentage
+
+        subject
+      end
+
+      it 'assign the rounded computed tax value to the item' do
+        taxes_amount = 123
+        allow(TaxesCalculator).to receive(:compute_tax_amount).and_return taxes_amount
+        expect(item).to receive(:taxes_amount=).with taxes_amount
 
         subject
       end
@@ -216,18 +223,20 @@ module SalesTaxesApp
       subject
     end
 
-    it 'sets the sum of the item prices in the receipt object' do
-      second_item = double Models::ReceiptItem, price: 2.0
+    it 'sets the sum of the item prices plus taxes in the receipt object' do
+      second_item = double Models::ReceiptItem, price: 2.0, taxes_amount: 1.25
       items << second_item
-      allow(item).to receive(:price).and_return 1.0
-      expect(receipt).to receive(:total_price=).with item.price + second_item.price
+      allow(item).to receive(:taxes_amount).and_return 1.0
+      expected_total = item.price + second_item.price + item.taxes_amount + second_item.taxes_amount
+      expect(receipt).to receive(:total_price=).with expected_total
 
       subject
     end
 
     it 'rounds the sum of the item prices' do
       allow(item).to receive(:price).and_return 1.2344
-      expect(receipt).to receive(:total_price=).with item.price.round(2)
+      allow(item).to receive(:taxes_amount).and_return 3.234
+      expect(receipt).to receive(:total_price=).with (item.price + item.taxes_amount).round(2)
 
       subject
     end
@@ -252,6 +261,18 @@ module SalesTaxesApp
     it 'returns a set of the imported stripped words' do
       settings[:keywords][:imported] = 'imported, something'
       expect(subject).to eql Set.new(settings[:keywords][:imported].split(',').map &:strip)
+    end
+  end
+
+  describe :compute_tax_amount do
+    [
+      [10.0, 1.2, 0.15], [10.0, 1.2222, 0.15],
+      [10.0, 1.8, 0.2], [10.0, 1, 0.1]
+    ].each do |price, percentage, expected|
+      it "rounds up the result to the nearest 0.05 when price #{price}, percentage #{percentage}, expected #{expected}" do
+        taxes = TaxesCalculator.send :compute_tax_amount, price, percentage
+        expect(taxes).to eql expected
+      end
     end
   end
 end

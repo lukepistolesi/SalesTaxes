@@ -52,7 +52,15 @@ module SalesTaxesApp
       it 'renders the receipt' do
         new_receipt = 'The new receipt'
         allow(ReceiptFactory).to receive(:from_csv).and_return new_receipt
-        expect(ReceiptRenderer).to receive(:render_receipt).with new_receipt
+        expect(ReceiptRenderer).to receive(:render_receipt).with new_receipt, anything
+
+        subject
+      end
+
+      it 'renders the receipt into the csv file' do
+        output_file = 'My file'
+        parsed_opts[:output_file] = output_file
+        expect(ReceiptRenderer).to receive(:render_receipt).with anything, output_file
 
         subject
       end
@@ -65,7 +73,7 @@ module SalesTaxesApp
       it 'returns the input file path' do
         expected_file_name = 'Input File Name'
         cmd_line_args << expected_file_name
-        expect(subject).to eql({input_file: expected_file_name})
+        expect(subject).to include({input_file: expected_file_name})
       end
 
       it 'raises exception when no input file path' do
@@ -75,6 +83,12 @@ module SalesTaxesApp
       it 'raises exception when too many params are provided' do
         cmd_line_args.concat ['file1', 'file2']
         expect{subject}.to raise_error 'Wrong number of arguments'
+      end
+
+      it 'returns the output file' do
+        expected_output_file_name = 'Input File Name'
+        cmd_line_args.concat ['inputFile', '-o', expected_output_file_name]
+        expect(subject).to include({output_file: expected_output_file_name})
       end
     end
   end
