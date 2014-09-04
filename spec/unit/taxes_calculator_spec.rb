@@ -8,25 +8,32 @@ module SalesTaxesApp
     describe :compute_taxes! do
 
       let(:exemptions) { Set.new }
+      let(:import_kws) { Set.new }
       let(:item) { double(Models::ReceiptItem, price: 1.0, taxes_amount: 2.0).as_null_object }
       let(:items) { [item] }
       let(:receipt) { double Models::Receipt, items: items }
 
       before :each do
         allow(TaxesCalculator).to receive(:gst_exempted_keywords).and_return exemptions
+        allow(TaxesCalculator).to receive(:import_taxation_keywords).and_return import_kws
         allow(TaxesCalculator).to receive(:find_tax_percentage).and_return 0
         allow(receipt).to receive :taxes_amount=
       end
 
       subject { TaxesCalculator.compute_taxes! receipt }
 
-      it 'retrieves the exemptions' do
+      it 'retrieves the gst exemptions' do
         expect(TaxesCalculator).to receive(:gst_exempted_keywords).and_return Set.new
         subject
       end
 
+      it 'retrieves the import taxation data' do
+        expect(TaxesCalculator).to receive(:import_taxation_keywords).and_return Set.new
+        subject
+      end
+
       it 'computes the tax percentage for a receipt item' do
-        expect(TaxesCalculator).to receive(:find_tax_percentage).with(item, exemptions).and_return 0
+        expect(TaxesCalculator).to receive(:find_tax_percentage).with(item, exemptions, import_kws).and_return 0
 
         subject
       end
@@ -83,8 +90,9 @@ module SalesTaxesApp
       let(:product_name_words) { ['first', 'second'] }
       let(:item) { double Models::ReceiptItem, product: product_name_words.join(' ') }
       let(:gst_exempted_keywords) { Set.new }
+      let(:import_keywords) { Set.new }
 
-      subject { TaxesCalculator.find_tax_percentage item, gst_exempted_keywords }
+      subject { TaxesCalculator.find_tax_percentage item, gst_exempted_keywords, import_keywords }
 
       context 'GST exempted product' do
 
@@ -116,6 +124,41 @@ module SalesTaxesApp
 
             expect(subject).to eql 10.0
           end
+        end
+      end
+
+      context 'Imported items without gst' do
+
+        let(:prod_name) { 'cucumber' }
+
+        before :each do
+          gst_exempted_keywords << prod_name
+        end
+
+        it 'returns zero percentage when the product is not imported' do
+          import_keywords << 'banana'
+          product_name_words.replace [prod_name, 'split']
+
+          expect(subject).to eql 0.0
+        end
+
+        it 'returns import percentage when the product is imported' do
+          import_keywords << prod_name
+          product_name_words.replace [prod_name, 'split']
+
+          expect(subject).to eql 5.0
+        end
+      end
+
+      context 'Imported items with gst' do
+
+        let(:prod_name) { 'cucumber' }
+
+        it 'returns both percentages when the product is imported' do
+          import_keywords << prod_name
+          product_name_words.replace [prod_name, 'split']
+
+          expect(subject).to eql 15.0
         end
       end
     end
@@ -180,6 +223,28 @@ module SalesTaxesApp
       expect(receipt).to receive(:total_price=).with item.price + second_item.price
 
       subject
+    end
+  end
+
+  describe :import_taxation_keywords do
+
+    let(:settings) { {keywords: { food: '', books: '', medical: '', imported: '' }} }
+    let(:mock_config) { double Configuration, settings: settings }
+
+    before :each do
+      allow(Configuration).to receive(:instance).and_return mock_config
+    end
+
+    subject { TaxesCalculator.import_taxation_keywords }
+
+    it 'fetches the configuration settings' do
+      expect(mock_config).to receive :settings
+      subject
+    end
+
+    it 'returns a set of the imported stripped words' do
+      settings[:keywords][:imported] = 'imported, something'
+      expect(subject).to eql Set.new(settings[:keywords][:imported].split(',').map &:strip)
     end
   end
 end

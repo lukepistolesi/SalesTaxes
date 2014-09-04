@@ -95,12 +95,12 @@ RSpec.configure do |config|
   end
 
   config.before :each, :integration do
-    keywords = { food: '', books: '', medical: '' }
+    keywords = { food: '', books: '', medical: '', imported: '' }
     IntegrationHelper.set_classification_keywords keywords
   end
 
   config.after :each, :integration do
-    keywords = { food: '', books: '', medical: '' }
+    keywords = { food: '', books: '', medical: '', imported: '' }
     IntegrationHelper.set_classification_keywords keywords
   end
 end
