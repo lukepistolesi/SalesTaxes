@@ -6,6 +6,10 @@ class IntegrationHelper
 
   def self.import_tax(price) self.calc_taxes price, 5.0 end
 
+  def self.both_taxes(price)
+    self.calc_taxes price, 15.0
+  end
+
   def self.calc_taxes(price, tax_percentage)
     full = price.to_f * (1.0 - 100.0/(tax_percentage.to_f + 100.0))
     (full * 20).round / 20.0

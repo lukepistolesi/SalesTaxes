@@ -3,7 +3,7 @@ require_relative '../../sales_taxes_app/application'
 
 describe 'SalesTaxes application happy cases', :integration do
 
-  it 'generates the taxes summary with import taxation when receipt with imported items' do
+  it 'generates taxes summary with both gst and import taxation when receipt with mixed items' do
 =begin
     Given keywords for items classification are set with
       | food | medical | books | imported |
@@ -17,13 +17,19 @@ describe 'SalesTaxes application happy cases', :integration do
 =end
 
     classification_keywords = {
-      food: 'nuts, nutty', books: '', medical: '',
-      imported: 'imported'
+      food: 'pasta, gnocchi',
+      books: 'book, little red riding hood',
+      medical: 'scalpel, malox,methadone',
+      imported: 'imported, turkey'
     }
     IntegrationHelper.set_classification_keywords classification_keywords
     items = [
-      {quantity: 1, product: 'imported nuts', price: 12.49, taxes: IntegrationHelper.import_tax(12.49)},
-      {quantity: 2, product: 'imported nutty stuff', price: 2.76, taxes: IntegrationHelper.import_tax(2.76)}
+      {quantity: 1, product: 'imported pasta', price: 12.49, taxes: IntegrationHelper.import_tax(12.49)},
+      {quantity: 2, product: 'some Italian gnocchi', price: 2.76, taxes: 0.0},
+      {quantity: 3, product: 'I feel Malox', price: 5.63, taxes: 0.0},
+      {quantity: 4, product: 'Let us read a book', price: 12.36, taxes: 0.0},
+      {quantity: 5, product: 'something else', price: 22.77, taxes: IntegrationHelper.gst(22.77)},
+      {quantity: 2, product: 'Fancy imported Italian stuff', price: 10.55, taxes: IntegrationHelper.both_taxes(10.55)}
     ]
     input_file = IntegrationHelper.create_receipt_file items
 

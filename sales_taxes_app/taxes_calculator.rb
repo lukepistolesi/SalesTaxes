@@ -20,7 +20,7 @@ module SalesTaxesApp
       receipt.total_price =
         receipt.items.inject(0.0) do |sum, item|
           sum += item.price.to_f
-        end
+        end.round 2
     end
 
     private

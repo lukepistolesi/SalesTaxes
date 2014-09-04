@@ -224,6 +224,13 @@ module SalesTaxesApp
 
       subject
     end
+
+    it 'rounds the sum of the item prices' do
+      allow(item).to receive(:price).and_return 1.2344
+      expect(receipt).to receive(:total_price=).with item.price.round(2)
+
+      subject
+    end
   end
 
   describe :import_taxation_keywords do

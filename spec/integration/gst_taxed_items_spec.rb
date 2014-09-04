@@ -26,7 +26,7 @@ describe 'SalesTaxes application happy cases', :integration do
     output_lines = IntegrationHelper.run_application_with input_file: input_file.path
 
     total = items.inject(0){ |sum, item| sum += item[:price]; sum }
-    taxes = items.inject(0){ |sum, item| sum += item[:taxes].to_f; sum }
+    taxes = items.inject(0){ |sum, item| sum += item[:taxes]; sum }
     taxes = (taxes * 20).round / 20.0
     expected_summary = { taxes: taxes.round(2).to_s, total: total.round(2).to_s }
     expected_output = IntegrationHelper.build_console_output items, expected_summary
