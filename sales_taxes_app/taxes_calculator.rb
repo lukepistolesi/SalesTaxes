@@ -13,7 +13,7 @@ module SalesTaxesApp
           item.taxes_amount = (full_taxes * 20).round / 20.0
           sum += item.taxes_amount
         end
-      receipt.taxes_amount = (full_taxes_amount * 200).round / 200.0
+      receipt.taxes_amount = (full_taxes_amount * 20).round / 20.0
     end
 
     def self.compute_total_price!(receipt)
