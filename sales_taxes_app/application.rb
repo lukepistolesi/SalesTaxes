@@ -1,4 +1,5 @@
 require 'optparse'
+Dir['./sales_taxes_app/**/*.rb'].each { |f| require f }
 
 module SalesTaxesApp
   class Application

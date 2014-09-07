@@ -1,4 +1,5 @@
 require 'singleton'
+require 'yaml'
 
 module SalesTaxesApp
   class Configuration

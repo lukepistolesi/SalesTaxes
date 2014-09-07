@@ -1,5 +1,6 @@
-keywords:
-  food: 'chocolate, pasta, bread'
-  books: 'book, megazine, manga'
-  medical: 'pace maker, aspirin, prescription glasses'
-  imported: 'imported'
+---
+:keywords:
+  :food: chocolate, pasta, bread
+  :books: book, megazine, manga
+  :medical: pace maker, aspirin, prescription glasses
+  :imported: imported
